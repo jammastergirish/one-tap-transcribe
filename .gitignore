@@ -1,0 +1,12 @@
+# Swift Package Manager build artifacts
+.build/
+.swiftpm/
+
+# Assembled .app bundle (produced by build_app.sh)
+build/
+
+# macOS
+.DS_Store
+
+# Claude Code local (machine-specific) settings
+.claude/settings.local.json
