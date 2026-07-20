@@ -30,6 +30,12 @@ hdiutil create -volname "One Tap Transcribe" \
     -srcfolder "$STAGING" -ov -format UDZO "$DMG" >/dev/null
 rm -rf "$STAGING"
 
+# Also emit a version-less copy so the site's permanent one-click link
+# (…/releases/latest/download/OneTapTranscribe.dmg) always resolves. Upload BOTH
+# assets to each GitHub Release.
+cp "$DMG" "$ROOT/build/OneTapTranscribe.dmg"
+
 echo "Created $DMG"
+echo "        $ROOT/build/OneTapTranscribe.dmg (version-less copy for the 'latest' link)"
 echo -n "SHA-256: "
 shasum -a 256 "$DMG" | awk '{print $1}'
