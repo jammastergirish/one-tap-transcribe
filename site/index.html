@@ -19,7 +19,6 @@
         --text: #2c2c2a;
         --text-2: #55554f;
         --text-3: #8b8b85;
-        --squircle: #1f1f1e;
       }
       @media (prefers-color-scheme: dark) {
         :root {
@@ -44,8 +43,12 @@
         line-height: 1.5;
         -webkit-font-smoothing: antialiased;
       }
+      img {
+        max-width: 100%;
+        display: block;
+      }
       .wrap {
-        max-width: 900px;
+        max-width: 960px;
         margin: 0 auto;
         padding: 0 22px;
       }
@@ -83,16 +86,10 @@
 
       .hero {
         text-align: center;
-        padding: 44px 0 40px;
-      }
-      .hero .logo {
-        width: 92px;
-        height: 92px;
-        margin: 0 auto 22px;
-        display: block;
+        padding: 40px 0 8px;
       }
       .hero h1 {
-        font-size: 40px;
+        font-size: 42px;
         margin: 0 0 10px;
         letter-spacing: -0.5px;
       }
@@ -130,11 +127,42 @@
         color: var(--text-3);
       }
 
+      .shot {
+        margin: 30px auto 0;
+        max-width: 360px;
+      }
+      .shot img {
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        box-shadow: 0 22px 55px rgba(0, 0, 0, 0.28);
+      }
+
+      .action {
+        margin: 40px 0 8px;
+        text-align: center;
+      }
+      .action .frame {
+        background: #161615;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        padding: 26px 22px;
+        box-shadow: 0 22px 55px rgba(0, 0, 0, 0.3);
+      }
+      .action .frame img {
+        margin: 0 auto;
+        max-width: 640px;
+      }
+      .action .cap {
+        margin-top: 16px;
+        color: var(--text-3);
+        font-size: 13.5px;
+      }
+
       .grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
         gap: 14px;
-        margin: 20px 0;
+        margin: 26px 0;
       }
       .feat {
         background: var(--card);
@@ -156,13 +184,31 @@
         margin-bottom: 10px;
       }
 
+      .shots {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+        gap: 16px;
+        align-items: start;
+      }
+      .shots figure {
+        margin: 0;
+      }
+      .shots img {
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+      }
+      .shots figcaption {
+        margin-top: 9px;
+      }
+
       .band {
         background: var(--card);
         border: 1px solid var(--border);
         border-left: 3px solid var(--ember);
         border-radius: 10px;
         padding: 20px 22px;
-        margin: 22px 0;
+        margin: 26px 0;
       }
       .band h2 {
         font-size: 18px;
@@ -175,11 +221,15 @@
       }
 
       section {
-        padding: 12px 0;
+        padding: 14px 0;
       }
       section > .mono {
         display: block;
-        margin-bottom: 12px;
+        margin-bottom: 14px;
+      }
+      h2.sec {
+        font-size: 22px;
+        margin: 22px 0 4px;
       }
       ol.install {
         padding-left: 20px;
@@ -195,8 +245,8 @@
 
       footer {
         border-top: 1px solid var(--border);
-        margin-top: 30px;
-        padding: 22px 0 40px;
+        margin-top: 34px;
+        padding: 24px 0 44px;
         text-align: center;
         color: var(--text-3);
         font-size: 12.5px;
@@ -210,7 +260,6 @@
     <div class="wrap">
       <header>
         <span class="brand">
-          <!-- logo -->
           <svg viewBox="0 0 56 56" aria-hidden="true">
             <rect x="3" y="3" width="50" height="50" rx="12" fill="#1F1F1E" />
             <g fill="#E8742E">
@@ -230,15 +279,6 @@
       </header>
 
       <div class="hero">
-        <svg class="logo" viewBox="0 0 56 56" aria-hidden="true">
-          <rect x="3" y="3" width="50" height="50" rx="12" fill="#1F1F1E" />
-          <g fill="#E8742E">
-            <rect x="18" y="21" width="4" height="14" rx="2" />
-            <rect x="25" y="14.5" width="4" height="27" rx="2" />
-            <rect x="32" y="19" width="4" height="18" rx="2" />
-            <rect x="39" y="24" width="4" height="8" rx="2" />
-          </g>
-        </svg>
         <h1>Talk. It types.</h1>
         <p class="tag">
           Push-to-talk dictation for macOS that runs entirely on your Mac. Hold
@@ -253,13 +293,31 @@
         <div class="meta">
           <span class="mono"
             >Free &amp; open source · macOS 26+ · Apple Silicon</span
-          >
-          <br />
+          ><br />
           <a
             class="sub"
             href="https://github.com/jammastergirish/one-tap-transcribe"
             >Release notes, source &amp; build-it-yourself on GitHub ↗</a
           >
+        </div>
+        <div class="shot">
+          <img
+            src="img/window.png"
+            alt="One Tap Transcribe main window: push-to-talk hint and last transcript"
+          />
+        </div>
+      </div>
+
+      <div class="action">
+        <div class="frame">
+          <img
+            src="img/overlay.png"
+            alt="Floating overlay showing a live waveform and transcript as you speak"
+          />
+          <div class="cap">
+            Your words appear live as you speak — a floating waveform, then the
+            text lands at your cursor.
+          </div>
         </div>
       </div>
 
@@ -315,6 +373,34 @@
         </div>
       </div>
 
+      <section>
+        <h2 class="sec">A look inside</h2>
+        <span class="mono">Everything is configurable</span>
+        <div class="shots">
+          <figure>
+            <img
+              src="img/general.png"
+              alt="General settings: appearance, push-to-talk key, overlay options"
+            />
+            <figcaption class="mono">General</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="img/speech.png"
+              alt="Speech settings: WhisperKit large-v3 turbo, streaming"
+            />
+            <figcaption class="mono">Speech-to-Text</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="img/cleanup.png"
+              alt="Cleanup settings: local Ollama server, detected models"
+            />
+            <figcaption class="mono">Cleanup</figcaption>
+          </figure>
+        </div>
+      </section>
+
       <div class="band">
         <h2>Private by design</h2>
         <p>
@@ -337,7 +423,8 @@
         </ol>
         <p style="font-size: 13px; color: var(--text-3)">
           Requires macOS 26 (Tahoe) or later on Apple Silicon. First dictation
-          downloads the speech model (~600 MB), cached for next time.
+          downloads the speech model (~600 MB), cached for next time. Signed
+          with a Developer ID and notarized by Apple — opens without warnings.
         </p>
       </section>
 
