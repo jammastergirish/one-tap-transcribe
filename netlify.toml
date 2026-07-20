@@ -1,4 +1,8 @@
-# Netlify: deploy the static one-page site in site/. No build step — it's a
-# single self-contained index.html. Connect this repo in Netlify and it just works.
+# Netlify: this repo is a Swift app; the website is just the static one-pager in
+# site/. Set the base directory to site/ so Netlify never sees Package.swift and
+# doesn't try to install Swift / build the app. There is nothing to build — the
+# publish directory is the base directory itself.
 [build]
-  publish = "site"
+  base = "site"
+  publish = "."
+  command = "echo 'Static site — nothing to build.'"
