@@ -37,7 +37,7 @@ final class OpenAICompatibleCleanup: CleanupEngine {
         if !apiKey.isEmpty {
             request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         }
-        request.timeoutInterval = 60
+        request.timeoutInterval = 15   // bounded so a hung server can't stall dictation
 
         let body: [String: Any] = [
             "model": model,

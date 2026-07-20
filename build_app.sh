@@ -27,17 +27,32 @@ rm -rf "$APP"
 mkdir -p "$CONTENTS/MacOS" "$CONTENTS/Resources"
 cp "$BIN_DIR/$APP_NAME" "$CONTENTS/MacOS/$APP_NAME"
 cp "$ROOT/Resources/Info.plist" "$CONTENTS/Info.plist"
+cp "$ROOT/Resources/AppIcon.icns" "$CONTENTS/Resources/AppIcon.icns" 2>/dev/null || true
 
 # Ship any bundled Swift package resources (e.g. WhisperKit) next to the binary.
 if compgen -G "$BIN_DIR/*.bundle" > /dev/null; then
     cp -R "$BIN_DIR"/*.bundle "$CONTENTS/Resources/" 2>/dev/null || true
 fi
 
-echo "==> code signing (ad-hoc)"
-codesign --force --deep --sign - \
-    --identifier "$BUNDLE_ID" \
-    --entitlements "$ROOT/Resources/$APP_NAME.entitlements" \
-    "$APP"
+# Prefer the stable self-signed identity (from ./setup_signing.sh) so the
+# designated requirement is cert-based and macOS keeps Accessibility across
+# rebuilds. Fall back to ad-hoc if it isn't set up.
+SIGN_ID="One Tap Local Signing"
+SIGN_KC="$HOME/Library/Keychains/onetap-signing.keychain-db"
+if [ -f "$SIGN_KC" ] && security find-identity -p codesigning "$SIGN_KC" 2>/dev/null | grep -q "$SIGN_ID"; then
+    echo "==> code signing (stable identity: $SIGN_ID)"
+    security unlock-keychain -p onetap-local "$SIGN_KC" 2>/dev/null || true
+    codesign --force --deep --sign "$SIGN_ID" --keychain "$SIGN_KC" \
+        --identifier "$BUNDLE_ID" \
+        --entitlements "$ROOT/Resources/$APP_NAME.entitlements" \
+        "$APP"
+else
+    echo "==> code signing (ad-hoc — run ./setup_signing.sh once to stop re-granting)"
+    codesign --force --deep --sign - \
+        --identifier "$BUNDLE_ID" \
+        --entitlements "$ROOT/Resources/$APP_NAME.entitlements" \
+        "$APP"
+fi
 
 echo "==> done: $APP"
 

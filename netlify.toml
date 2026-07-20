@@ -1,0 +1,4 @@
+# Netlify: deploy the static one-page site in site/. No build step — it's a
+# single self-contained index.html. Connect this repo in Netlify and it just works.
+[build]
+  publish = "site"

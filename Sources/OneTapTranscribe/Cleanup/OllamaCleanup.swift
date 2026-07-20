@@ -30,7 +30,7 @@ final class OllamaCleanup: CleanupEngine {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = 60
+        request.timeoutInterval = 15   // bounded so a hung server can't stall dictation
 
         let body: [String: Any] = [
             "model": model,

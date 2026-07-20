@@ -14,6 +14,14 @@ protocol CleanupEngine: AnyObject {
     func clean(_ text: String, systemPrompt: String, userTemplate: String) async throws -> String
 }
 
+enum CleanupError: LocalizedError {
+    case unavailable(String)
+    var errorDescription: String? {
+        if case .unavailable(let reason) = self { return reason }
+        return nil
+    }
+}
+
 enum CleanupAvailability {
     case available
     case unavailable(String)   // reason, shown in Settings

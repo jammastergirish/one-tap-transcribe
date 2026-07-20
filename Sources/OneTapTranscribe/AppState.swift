@@ -39,10 +39,26 @@ final class AppState: ObservableObject {
             case .error:        return "exclamationmark.triangle"
             }
         }
+
+        var badge: String {
+            switch self {
+            case .idle:         return "Ready"
+            case .preparing:    return "Loading"
+            case .recording:    return "Listening"
+            case .transcribing: return "Transcribing"
+            case .cleaning:     return "Cleaning"
+            case .inserting:    return "Inserting"
+            case .error:        return "Error"
+            }
+        }
     }
 
     @Published private(set) var status: Status = .idle
     @Published private(set) var lastTranscript: String = ""
+    @Published private(set) var lastTranscriptAt: Date?
+    /// Non-nil when the selected cleanup engine can't run (server down, Apple
+    /// Intelligence off, …). Surfaced in the main window and menu.
+    @Published private(set) var cleanupWarning: String?
     @Published private(set) var micAuthorized = false
     @Published private(set) var accessibilityTrusted = false
 
@@ -59,6 +75,8 @@ final class AppState: ObservableObject {
     private var isBusy = false
     private var cancellables = Set<AnyCancellable>()
     private var permissionTimer: Timer?
+    private var liveSession: LiveTranscriptionSession?
+    private var partialTimer: Timer?
 
     init(store: SettingsStore) {
         self.store = store
@@ -79,10 +97,12 @@ final class AppState: ObservableObject {
         }
 
         applyActivationPolicy(s.menuBarOnly)
+        applyAppearance(s.appearance)
         observeSettings()
         refreshPermissions()
         startPermissionWatch()
         prewarm()
+        refreshCleanupAvailability()
     }
 
     /// Polls TCC so the UI updates the moment the user flips a permission in
@@ -110,6 +130,25 @@ final class AppState: ObservableObject {
         NSApp.setActivationPolicy(menuBarOnly ? .accessory : .regular)
     }
 
+    private func applyAppearance(_ mode: AppearanceMode) {
+        switch mode {
+        case .system: NSApp.appearance = nil
+        case .light:  NSApp.appearance = NSAppearance(named: .aqua)
+        case .dark:   NSApp.appearance = NSAppearance(named: .darkAqua)
+        }
+    }
+
+    /// Probe the selected cleanup engine so the UI can warn *before* dictation
+    /// if it can't run (server down, Apple Intelligence off, …).
+    func refreshCleanupAvailability() {
+        let engine = cleaner
+        let kind = store.settings.cleanup
+        Task {
+            guard kind != .none else { cleanupWarning = nil; return }
+            cleanupWarning = await engine.availability().reason
+        }
+    }
+
     // MARK: - Recording pipeline
 
     private func startRecording() {
@@ -120,6 +159,7 @@ final class AppState: ObservableObject {
             status = .recording
             showOverlayRecording()
             if store.settings.playFeedbackSounds { SoundFeedback.startCue() }
+            startStreamingIfPossible()
         } catch {
             status = .error(error.localizedDescription)
         }
@@ -128,13 +168,28 @@ final class AppState: ObservableObject {
     private func stopAndProcess() {
         guard status == .recording else { return }
         let samples = recorder.stop()
+        recorder.onChunk16k = nil
+        stopPartialPoll()
         if store.settings.playFeedbackSounds { SoundFeedback.stopCue() }
 
-        let clip = AudioClip(samples: samples, sampleRate: recorder.sampleRate)
-        guard !clip.isEffectivelySilent else { status = .idle; hideOverlay(); return }
-
-        isBusy = true
-        Task { await process(clip) }
+        if let session = liveSession {
+            // Streaming: most audio is already transcribed; just finish the tail.
+            liveSession = nil
+            isBusy = true
+            status = .transcribing
+            setOverlayPhase(.transcribing)
+            Task {
+                defer { isBusy = false }
+                let raw = await session.finish()
+                await finishPipeline(raw)
+            }
+        } else {
+            // Batch fallback (e.g. Apple engine, or streaming disabled/failed).
+            let clip = AudioClip(samples: samples, sampleRate: recorder.sampleRate)
+            guard !clip.isEffectivelySilent else { status = .idle; hideOverlay(); return }
+            isBusy = true
+            Task { await process(clip) }
+        }
     }
 
     private func process(_ clip: AudioClip) async {
@@ -143,30 +198,84 @@ final class AppState: ObservableObject {
             status = .transcribing
             setOverlayPhase(.transcribing)
             let raw = try await transcriber.transcribe(clip)
-            guard !raw.isEmpty else { status = .idle; hideOverlay(); return }
-
-            var finalText = raw
-            if store.settings.cleanup != .none {
-                status = .cleaning
-                finalText = (try? await cleaner.clean(
-                    raw,
-                    systemPrompt: store.settings.cleanupSystemPrompt,
-                    userTemplate: store.settings.cleanupUserTemplate
-                )) ?? raw
-            }
-
-            lastTranscript = finalText
-            guard !finalText.isEmpty else { status = .idle; hideOverlay(); return }
-
-            status = .inserting
-            setOverlayPhase(.inserting)
-            TextInjector.insert(finalText, viaPaste: store.settings.pasteInsteadOfType)
-            status = .idle
-            hideOverlay()
+            await finishPipeline(raw)
         } catch {
             status = .error(error.localizedDescription)
             hideOverlay()
         }
+    }
+
+    /// Cleanup + insert, shared by the streaming and batch paths.
+    private func finishPipeline(_ raw: String) async {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { status = .idle; hideOverlay(); return }
+
+        var finalText = trimmed
+        if store.settings.cleanup != .none {
+            status = .cleaning
+            setOverlayPhase(.cleaning)
+            do {
+                finalText = try await cleaner.clean(
+                    trimmed,
+                    systemPrompt: store.settings.cleanupSystemPrompt,
+                    userTemplate: store.settings.cleanupUserTemplate
+                )
+                cleanupWarning = nil
+            } catch {
+                // Never drop the transcript: insert it raw and say why.
+                finalText = trimmed
+                cleanupWarning = await cleaner.availability().reason
+                    ?? "Cleanup was skipped — raw text inserted."
+            }
+        }
+
+        lastTranscript = finalText
+        lastTranscriptAt = Date()
+        guard !finalText.isEmpty else { status = .idle; hideOverlay(); return }
+
+        status = .inserting
+        TextInjector.insert(finalText, viaPaste: store.settings.pasteInsteadOfType)
+        status = .idle
+        hideOverlay()
+    }
+
+    // MARK: - Streaming
+
+    private func startStreamingIfPossible() {
+        guard store.settings.streaming, let capable = transcriber as? StreamingCapable else { return }
+        Task {
+            do {
+                let session = try await capable.startStreamingSession()
+                // The user may have released the key during session setup.
+                guard status == .recording else { _ = await session.finish(); return }
+                liveSession = session
+                recorder.onChunk16k = { chunk in session.append(chunk) }
+                startPartialPoll(session)
+            } catch {
+                // Streaming unavailable — the recorder is still accumulating for
+                // the batch fallback in stopAndProcess.
+            }
+        }
+    }
+
+    private func startPartialPoll(_ session: LiveTranscriptionSession) {
+        stopPartialPoll()
+        guard store.settings.showOverlay, store.settings.showLiveText else { return }
+        // Poll once per ~half second: slow enough to read calmly, since the
+        // session already suppresses the per-token churn.
+        partialTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                guard let self, self.status == .recording else { return }
+                let parts = await session.partialParts()
+                self.overlay.model.confirmedText = parts.confirmed
+                self.overlay.model.volatileText = parts.volatile
+            }
+        }
+    }
+
+    private func stopPartialPoll() {
+        partialTimer?.invalidate()
+        partialTimer = nil
     }
 
     // MARK: - Overlay helpers
@@ -174,6 +283,7 @@ final class AppState: ObservableObject {
     private func showOverlayRecording() {
         guard store.settings.showOverlay else { return }
         overlay.model.reset()
+        overlay.model.triggerHint = store.settings.triggerKey.chip
         overlay.model.phase = .recording
         overlay.show()
     }
@@ -197,10 +307,17 @@ final class AppState: ObservableObject {
             for i in 0..<45 {
                 let t = Double(i) / 5.0
                 overlay.model.push(Float(0.25 + 0.55 * abs(sin(t)) + 0.15 * abs(sin(t * 2.7))))
+                if i == 12 { overlay.model.confirmedText = "this is a live preview" }
+                if i == 26 {
+                    overlay.model.confirmedText = "this is a live preview of the transcript"
+                    overlay.model.volatileText = "as you speak"
+                }
                 try? await Task.sleep(nanoseconds: 55_000_000)
             }
             overlay.model.phase = .transcribing
-            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            try? await Task.sleep(nanoseconds: 800_000_000)
+            overlay.model.phase = .cleaning
+            try? await Task.sleep(nanoseconds: 800_000_000)
             overlay.hide()
         }
     }
@@ -245,10 +362,13 @@ final class AppState: ObservableObject {
             prewarm()
         }
 
+        applyAppearance(s.appearance)
+
         let newCleanup = Self.cleanupSignature(s)
         if newCleanup != cleanupSignature {
             cleanupSignature = newCleanup
             cleaner = CleanupEngineFactory.make(s)
+            refreshCleanupAvailability()
         }
     }
 

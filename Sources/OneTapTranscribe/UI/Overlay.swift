@@ -1,19 +1,26 @@
 import AppKit
 import SwiftUI
 
-enum HUDPhase: Equatable { case hidden, recording, transcribing, inserting }
+enum HUDPhase: Equatable { case hidden, recording, transcribing, cleaning }
 
-/// Shared state for the floating overlay: current phase + a rolling window of
-/// recent audio levels for the waveform.
+/// Shared state for the floating overlay: current phase, a rolling window of
+/// recent audio levels for the waveform, and live partial transcript text.
 @MainActor
 final class HUDModel: ObservableObject {
     static let barCount = 44
 
     @Published var phase: HUDPhase = .hidden
+    @Published var confirmedText: String = ""
+    @Published var volatileText: String = ""
+    @Published var triggerHint: String = "R⌘"
     @Published private(set) var levels: [Float] = Array(repeating: 0, count: HUDModel.barCount)
+
+    var hasLiveText: Bool { !confirmedText.isEmpty || !volatileText.isEmpty }
 
     func reset() {
         levels = Array(repeating: 0, count: Self.barCount)
+        confirmedText = ""
+        volatileText = ""
     }
 
     func push(_ level: Float) {
@@ -31,7 +38,7 @@ final class HUDModel: ObservableObject {
 final class OverlayController {
     let model = HUDModel()
     private var panel: NSPanel?
-    private let size = NSSize(width: 260, height: 60)
+    private let size = NSSize(width: 460, height: 96)
 
     func show() {
         ensurePanel()

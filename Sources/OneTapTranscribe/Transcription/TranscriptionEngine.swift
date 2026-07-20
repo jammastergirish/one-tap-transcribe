@@ -24,6 +24,24 @@ extension TranscriptionEngine {
     func prepare(progress: (@Sendable (Double) -> Void)?) async throws {}
 }
 
+/// A live transcription session: audio is fed in as it's captured, partial text
+/// is available while speaking, and the final text is returned on stop.
+protocol LiveTranscriptionSession: Sendable {
+    /// Feed a 16 kHz mono chunk. Safe to call from the audio thread; ordered.
+    func append(_ chunk16k: [Float])
+    /// Transcript so far, split into `confirmed` (stable) and `volatile` (the
+    /// still-settling tail) so the UI can render the tail dimmed and avoid the
+    /// jank of showing the token-by-token in-flight decode.
+    func partialParts() async -> (confirmed: String, volatile: String)
+    /// Stop, decode the remaining tail, and return the full transcript.
+    func finish() async -> String
+}
+
+/// A transcription engine that can also run in streaming mode.
+protocol StreamingCapable: AnyObject {
+    func startStreamingSession() async throws -> LiveTranscriptionSession
+}
+
 enum TranscriptionError: LocalizedError {
     case localeUnsupported(String)
     case noCompatibleAudioFormat

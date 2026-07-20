@@ -66,6 +66,18 @@ enum CleanupKind: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+enum AppearanceMode: String, Codable, CaseIterable, Identifiable {
+    case system, light, dark
+    var id: String { rawValue }
+    var displayName: String {
+        switch self {
+        case .system: return "System"
+        case .light:  return "Light"
+        case .dark:   return "Dark"
+        }
+    }
+}
+
 /// Push-to-talk key. Modifier keys are used as press-and-hold triggers.
 enum TriggerKey: String, Codable, CaseIterable, Identifiable {
     case fn
@@ -79,6 +91,16 @@ enum TriggerKey: String, Codable, CaseIterable, Identifiable {
         case .rightCommand:  return "Right ⌘ Command"
         case .rightOption:   return "Right ⌥ Option"
         case .rightControl:  return "Right ⌃ Control"
+        }
+    }
+
+    /// Compact key-cap label for chips.
+    var chip: String {
+        switch self {
+        case .fn:            return "fn"
+        case .rightCommand:  return "R⌘"
+        case .rightOption:   return "R⌥"
+        case .rightControl:  return "R⌃"
         }
     }
 }
@@ -109,6 +131,8 @@ struct AppSettings: Codable, Equatable {
     var whisperModel: WhisperModel = .largeV3
     /// Whisper transcription language ("en", "es", …) or "auto" to detect.
     var whisperLanguage: String = "en"
+    /// Transcribe while speaking (WhisperKit only) so release→text is near-instant.
+    var streaming: Bool = true
     var appleSpeechLocale: String = "en-US"
 
     var cleanup: CleanupKind = .appleFoundation
@@ -132,6 +156,8 @@ struct AppSettings: Codable, Equatable {
     var pasteInsteadOfType: Bool = true
     var playFeedbackSounds: Bool = true
 
+    var appearance: AppearanceMode = .system
+
     /// When true: menu-bar icon only, no Dock icon. When false (default): also
     /// show a Dock icon + main window, so the app is easy to find.
     var menuBarOnly: Bool = false
@@ -139,6 +165,40 @@ struct AppSettings: Codable, Equatable {
     /// Show the floating recording overlay (waveform → "Transcribing…") at the
     /// bottom-center of the screen while dictating.
     var showOverlay: Bool = true
+
+    /// Show live partial transcript text in the overlay while speaking
+    /// (streaming only). Off = waveform only.
+    var showLiveText: Bool = true
+}
+
+// Tolerant decoding: any field missing from older stored JSON keeps its default
+// instead of failing the whole decode (which would reset all settings).
+extension AppSettings {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        var s = AppSettings()
+        if let v = try? c.decode(STTEngineKind.self, forKey: .sttEngine) { s.sttEngine = v }
+        if let v = try? c.decode(WhisperModel.self, forKey: .whisperModel) { s.whisperModel = v }
+        if let v = try? c.decode(String.self, forKey: .whisperLanguage) { s.whisperLanguage = v }
+        if let v = try? c.decode(Bool.self, forKey: .streaming) { s.streaming = v }
+        if let v = try? c.decode(String.self, forKey: .appleSpeechLocale) { s.appleSpeechLocale = v }
+        if let v = try? c.decode(CleanupKind.self, forKey: .cleanup) { s.cleanup = v }
+        if let v = try? c.decode(String.self, forKey: .ollamaEndpoint) { s.ollamaEndpoint = v }
+        if let v = try? c.decode(String.self, forKey: .ollamaModel) { s.ollamaModel = v }
+        if let v = try? c.decode(String.self, forKey: .openAIEndpoint) { s.openAIEndpoint = v }
+        if let v = try? c.decode(String.self, forKey: .openAIModel) { s.openAIModel = v }
+        if let v = try? c.decode(String.self, forKey: .openAIAPIKey) { s.openAIAPIKey = v }
+        if let v = try? c.decode(TriggerKey.self, forKey: .triggerKey) { s.triggerKey = v }
+        if let v = try? c.decode(String.self, forKey: .cleanupSystemPrompt) { s.cleanupSystemPrompt = v }
+        if let v = try? c.decode(String.self, forKey: .cleanupUserTemplate) { s.cleanupUserTemplate = v }
+        if let v = try? c.decode(Bool.self, forKey: .pasteInsteadOfType) { s.pasteInsteadOfType = v }
+        if let v = try? c.decode(Bool.self, forKey: .playFeedbackSounds) { s.playFeedbackSounds = v }
+        if let v = try? c.decode(AppearanceMode.self, forKey: .appearance) { s.appearance = v }
+        if let v = try? c.decode(Bool.self, forKey: .menuBarOnly) { s.menuBarOnly = v }
+        if let v = try? c.decode(Bool.self, forKey: .showOverlay) { s.showOverlay = v }
+        if let v = try? c.decode(Bool.self, forKey: .showLiveText) { s.showLiveText = v }
+        self = s
+    }
 }
 
 // MARK: - Persistence

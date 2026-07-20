@@ -14,42 +14,38 @@ struct OneTapTranscribeApp: App {
     }
 
     var body: some Scene {
-        // Main window — makes the app findable in the Dock / Cmd-Tab even when
-        // the menu-bar icon is hidden behind the notch.
-        Window("OneTap Transcribe", id: "home") {
+        Window("One Tap Transcribe", id: "home") {
             HomeView()
                 .environmentObject(state)
                 .environmentObject(store)
         }
+        .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
 
         MenuBarExtra {
-            MenuContent()
+            MenuPanel()
                 .environmentObject(state)
                 .environmentObject(store)
         } label: {
-            Image(systemName: state.status.symbol)
+            Image(nsImage: AppArtwork.menuBarIcon())
         }
-        .menuBarExtraStyle(.menu)
+        .menuBarExtraStyle(.window)
 
         Settings {
             SettingsView()
                 .environmentObject(state)
                 .environmentObject(store)
-                .frame(width: 560, height: 620)
+                .frame(width: 580, height: 640)
         }
     }
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Bring the main window to the front on launch so it's immediately
-        // visible. Activation policy (Dock icon vs. menu-bar-only) is applied
-        // by AppState from the user's setting.
+        NSApp.applicationIconImage = AppArtwork.appIcon()
         NSApp.activate(ignoringOtherApps: true)
     }
 
-    // Re-open the main window when the Dock icon is clicked.
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         if !flag { NSApp.activate(ignoringOtherApps: true) }
         return true

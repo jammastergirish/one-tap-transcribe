@@ -60,3 +60,12 @@ final class WhisperKitEngine: TranscriptionEngine {
             .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
+
+extension WhisperKitEngine: StreamingCapable {
+    func startStreamingSession() async throws -> LiveTranscriptionSession {
+        let pipe = try await loadedPipe()
+        let session = WhisperLiveSession(whisper: pipe, language: language)
+        await session.start()
+        return session
+    }
+}

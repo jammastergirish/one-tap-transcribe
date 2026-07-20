@@ -22,7 +22,12 @@ final class FoundationModelsEngine: CleanupEngine {
     }
 
     func clean(_ text: String, systemPrompt: String, userTemplate: String) async throws -> String {
-        guard case .available = SystemLanguageModel.default.availability else { return text }
+        // Throw (rather than silently returning raw) so the pipeline can tell
+        // the user cleanup was skipped and why.
+        let status = await availability()
+        guard case .available = status else {
+            throw CleanupError.unavailable(status.reason ?? "Apple's on-device model is unavailable.")
+        }
 
         let session = LanguageModelSession(instructions: systemPrompt)
         let options = GenerationOptions(temperature: 0.2, maximumResponseTokens: 4_000)

@@ -13,6 +13,10 @@ final class AudioRecorder {
     /// captured buffer — drives the live waveform in the recording overlay.
     var onLevel: ((Float) -> Void)?
 
+    /// Called on the audio thread with each 16 kHz mono chunk — feeds the live
+    /// streaming transcriber. Ordering is preserved.
+    var onChunk16k: (([Float]) -> Void)?
+
     private let engine = AVAudioEngine()
     private let targetFormat: AVAudioFormat
     private var converter: AVAudioConverter?
@@ -83,6 +87,9 @@ final class AudioRecorder {
         samples.append(contentsOf: UnsafeBufferPointer(start: channel[0], count: count))
         lock.unlock()
 
+        if let onChunk16k {
+            onChunk16k(Array(UnsafeBufferPointer(start: channel[0], count: count)))
+        }
         emitLevels(from: channel[0], count: count)
     }
 
