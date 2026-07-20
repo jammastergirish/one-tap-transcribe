@@ -23,7 +23,7 @@ Menu-bar app (optional Dock icon). Built in Swift/SwiftUI. MIT-licensed.
 
 ## Install
 
-1. Download `OneTapTranscribe-x.y.z.dmg` from [Releases](#), open it, and drag
+1. Download `OneTapTranscribe-x.y.z.dmg` from [Releases](https://github.com/jammastergirish/one-tap-transcribe/releases), open it, and drag
    **One Tap Transcribe** to Applications.
 2. Launch it. A 🎙️ waveform icon appears in the menu bar (and the Dock).
 3. Grant **Microphone** and **Accessibility** when prompted (or via
