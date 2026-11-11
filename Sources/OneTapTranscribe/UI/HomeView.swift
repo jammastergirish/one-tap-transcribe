@@ -6,6 +6,7 @@ struct HomeView: View {
     @EnvironmentObject var state: AppState
     @EnvironmentObject var store: SettingsStore
     @Environment(\.openSettings) private var openSettings
+    @State private var confirmClear = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -37,14 +38,23 @@ struct HomeView: View {
             hotkeyBanner
 
             VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    MonoLabel(text: "Last transcript", size: 11, tracking: 1.0, color: Theme.textSecondary)
+                HStack(spacing: 8) {
+                    MonoLabel(text: "Recent transcripts", size: 11, tracking: 1.0, color: Theme.textSecondary)
                     Spacer()
-                    if let meta = transcriptMeta {
-                        Text(meta).font(.mono(11)).foregroundStyle(Theme.monoFaint)
+                    if !state.history.isEmpty {
+                        Text("\(state.history.count)").font(.mono(11)).foregroundStyle(Theme.monoFaint)
+                        Button("Clear") { confirmClear = true }
+                            .buttonStyle(.plain)
+                            .font(.mono(11, weight: .medium))
+                            .foregroundStyle(Theme.emberText)
                     }
                 }
-                transcriptCard
+                TranscriptsTable()
+            }
+            .confirmationDialog("Delete all saved transcripts?", isPresented: $confirmClear) {
+                Button("Delete All", role: .destructive) { state.clearHistory() }
+            } message: {
+                Text("This removes the transcript history from this Mac. It can't be undone.")
             }
 
             if let warning = state.cleanupWarning {
@@ -81,30 +91,6 @@ struct HomeView: View {
         .background(Theme.inversePanelBG, in: RoundedRectangle(cornerRadius: 10))
     }
 
-    private var transcriptCard: some View {
-        HStack(spacing: 0) {
-            Rectangle().fill(Theme.ember).frame(width: 3)
-            Group {
-                if state.lastTranscript.isEmpty {
-                    Text("No transcript yet. Hold your key and speak.")
-                        .foregroundStyle(Theme.textTertiary)
-                } else {
-                    Text(state.lastTranscript)
-                        .foregroundStyle(Theme.textPrimary)
-                        .textSelection(.enabled)
-                }
-            }
-            .font(.system(size: 13.5))
-            .lineSpacing(3)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
-        }
-        .frame(minHeight: 96, alignment: .topLeading)
-        .background(Theme.cardBG, in: RoundedRectangle(cornerRadius: 9))
-        .overlay(RoundedRectangle(cornerRadius: 9).stroke(Theme.fieldBorder, lineWidth: 1))
-    }
-
     private var footer: some View {
         HStack {
             Button("Settings…") {
@@ -116,20 +102,4 @@ struct HomeView: View {
         }
         .buttonStyle(GraphiteButtonStyle())
     }
-
-    // MARK: Helpers
-
-    private var transcriptMeta: String? {
-        guard !state.lastTranscript.isEmpty else { return nil }
-        let words = state.lastTranscript.split { $0 == " " || $0 == "\n" }.count
-        let time = state.lastTranscriptAt.map { Self.timeFormatter.string(from: $0) }
-        let wordStr = "\(words) word\(words == 1 ? "" : "s")"
-        return time.map { "\($0) · \(wordStr)" } ?? wordStr
-    }
-
-    private static let timeFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "HH:mm"
-        return f
-    }()
 }

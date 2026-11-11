@@ -56,6 +56,8 @@ final class AppState: ObservableObject {
     @Published private(set) var status: Status = .idle
     @Published private(set) var lastTranscript: String = ""
     @Published private(set) var lastTranscriptAt: Date?
+    /// Recent transcripts, newest first (saved locally; see TranscriptHistory).
+    @Published private(set) var history: [TranscriptEntry] = TranscriptHistory.load()
     /// Non-nil when the selected cleanup engine can't run (server down, Apple
     /// Intelligence off, …). Surfaced in the main window and menu.
     @Published private(set) var cleanupWarning: String?
@@ -86,6 +88,10 @@ final class AppState: ObservableObject {
         self.cleaner = CleanupEngineFactory.make(s)
         self.sttSignature = Self.sttSignature(s)
         self.cleanupSignature = Self.cleanupSignature(s)
+        if let newest = history.first {
+            lastTranscript = newest.text
+            lastTranscriptAt = newest.date
+        }
 
         hotkey.onPress = { [weak self] in self?.startRecording() }
         hotkey.onRelease = { [weak self] in self?.stopAndProcess() }
@@ -231,12 +237,35 @@ final class AppState: ObservableObject {
 
         lastTranscript = finalText
         lastTranscriptAt = Date()
+        if !finalText.isEmpty {
+            history.insert(TranscriptEntry(text: finalText, date: lastTranscriptAt!), at: 0)
+            if history.count > TranscriptHistory.limit { history.removeLast(history.count - TranscriptHistory.limit) }
+            TranscriptHistory.save(history)
+        }
         guard !finalText.isEmpty else { status = .idle; hideOverlay(); return }
 
         status = .inserting
         TextInjector.insert(finalText, viaPaste: store.settings.pasteInsteadOfType)
         status = .idle
         hideOverlay()
+    }
+
+    // MARK: - History
+
+    func deleteTranscript(_ entry: TranscriptEntry) {
+        history.removeAll { $0.id == entry.id }
+        TranscriptHistory.save(history)
+        if history.first?.text != lastTranscript {
+            lastTranscript = history.first?.text ?? ""
+            lastTranscriptAt = history.first?.date
+        }
+    }
+
+    func clearHistory() {
+        history = []
+        TranscriptHistory.save(history)
+        lastTranscript = ""
+        lastTranscriptAt = nil
     }
 
     // MARK: - Streaming
