@@ -42,12 +42,17 @@ echo "==> packaging .dmg"
 VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "$APP/Contents/Info.plist")
 DMG="$ROOT/build/OneTapTranscribe-$VERSION.dmg"
 
+echo "==> signing the .dmg"
+codesign --force --timestamp --sign "$SIGN_ID" "$DMG"
+codesign --verify --verbose=2 "$DMG"
+
 echo "==> notarizing (a few minutes)…"
 xcrun notarytool submit "$DMG" --keychain-profile "$NOTARY_PROFILE" --wait
 
 echo "==> stapling the notarization ticket"
 xcrun stapler staple "$DMG"
 xcrun stapler validate "$DMG"
+cp "$DMG" "$ROOT/build/OneTapTranscribe.dmg"   # refresh the version-less copy with the stapled DMG
 
 echo "==> release ready"
 echo "$DMG"
