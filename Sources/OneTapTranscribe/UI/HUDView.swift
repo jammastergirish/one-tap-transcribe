@@ -1,4 +1,5 @@
 import SwiftUI
+import GraphiteEmber
 
 /// The floating overlay pill. Fixed dark appearance in both OS modes.
 struct HUDView: View {

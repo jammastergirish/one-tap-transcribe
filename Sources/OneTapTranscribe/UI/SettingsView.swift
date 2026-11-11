@@ -1,4 +1,5 @@
 import SwiftUI
+import GraphiteEmber
 
 enum SettingsTab: String, CaseIterable, Identifiable {
     case general, speech, cleanup, prompts, permissions

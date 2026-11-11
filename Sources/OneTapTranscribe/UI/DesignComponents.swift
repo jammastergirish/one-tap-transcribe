@@ -1,5 +1,9 @@
 import SwiftUI
+import GraphiteEmber
 import AppKit
+
+// One Tap Transcribe's own pieces. The shared theme and components come from
+// the GraphiteEmber package.
 
 // MARK: - Waveform glyph (logo + accents)
 
@@ -22,21 +26,15 @@ struct WaveformGlyph: View {
     }
 }
 
-// MARK: - Status badge (READY)
-
-struct StatusBadge: View {
-    var text: String
-    var color: Color = Theme.emberText
-    var tint: Color = Theme.emberTint
-
-    var body: some View {
-        Text(text.uppercased())
-            .font(.mono(10, weight: .semibold))
-            .tracking(0.5)
-            .foregroundStyle(color)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(tint, in: RoundedRectangle(cornerRadius: 4))
+extension LogoSquircle where Mark == WaveformGlyph {
+    /// The squircle with One Tap Transcribe's waveform mark.
+    init(side: CGFloat = 24) {
+        self.init(side: side) { side in
+            WaveformGlyph(color: Theme.ember,
+                          barWidth: side * 0.09,
+                          spacing: side * 0.06,
+                          height: side * 0.42)
+        }
     }
 }
 
@@ -51,42 +49,6 @@ struct KeyCapChip: View {
             .padding(.horizontal, 6)
             .padding(.vertical, 3)
             .background(RoundedRectangle(cornerRadius: 5).stroke(Theme.fieldBorder, lineWidth: 1))
-    }
-}
-
-// MARK: - Logo squircle
-
-struct LogoSquircle: View {
-    var side: CGFloat = 24
-    var body: some View {
-        RoundedRectangle(cornerRadius: side * 0.23, style: .continuous)
-            .fill(Theme.squircleBG)
-            .frame(width: side, height: side)
-            .overlay(
-                WaveformGlyph(color: Theme.ember,
-                              barWidth: side * 0.09,
-                              spacing: side * 0.06,
-                              height: side * 0.42)
-            )
-    }
-}
-
-// MARK: - Ember spinner
-
-struct EmberSpinner: View {
-    var size: CGFloat = 14
-    @State private var angle: Double = 0
-    var body: some View {
-        ZStack {
-            Circle().stroke(Theme.ember.opacity(0.35), lineWidth: 2)
-            Circle().trim(from: 0, to: 0.3)
-                .stroke(Theme.ember, style: StrokeStyle(lineWidth: 2, lineCap: .round))
-                .rotationEffect(.degrees(angle))
-        }
-        .frame(width: size, height: size)
-        .onAppear {
-            withAnimation(.linear(duration: 0.85).repeatForever(autoreverses: false)) { angle = 360 }
-        }
     }
 }
 
@@ -158,49 +120,29 @@ struct MonoTextField: View {
     }
 }
 
-// MARK: - Ghost/bordered button style ("Settings…", "Quit", "Preview")
-
-struct GraphiteButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 13))
-            .foregroundStyle(Theme.textPrimary)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 5)
-            .background(Theme.buttonBG, in: RoundedRectangle(cornerRadius: 7))
-            .overlay(RoundedRectangle(cornerRadius: 7).stroke(Theme.fieldBorder, lineWidth: 1))
-            .shadow(color: .black.opacity(0.05), radius: 1, y: 1)
-            .opacity(configuration.isPressed ? 0.7 : 1)
-    }
-}
-
 // MARK: - Drawn artwork (app icon + menu-bar icon)
 
 enum AppArtwork {
     /// Near-black squircle with centered ember waveform bars.
-    static func appIcon(side: CGFloat = 512) -> NSImage {
-        let img = NSImage(size: NSSize(width: side, height: side))
-        img.lockFocus()
-        let inset = side * 0.055
-        let rect = NSRect(x: inset, y: inset, width: side - 2 * inset, height: side - 2 * inset)
-        NSColor(Theme.squircleBG).setFill()
-        NSBezierPath(roundedRect: rect, xRadius: rect.width * 0.23, yRadius: rect.width * 0.23).fill()
-        drawBars(in: rect, color: NSColor(Theme.ember),
-                 maxFraction: 0.42, barWidthFraction: 0.10, gapFraction: 0.065)
-        img.unlockFocus()
-        return img
+    static func appIcon() -> NSImage {
+        SquircleIcon.image(mark: drawAppMark)
+    }
+
+    /// Handles the build script's `--write-iconset <folder>` launch flag.
+    static func writeIconsetIfRequested() {
+        SquircleIcon.writeIconsetIfRequested(mark: drawAppMark)
     }
 
     /// Monochrome template bars for the menu bar.
     static func menuBarIcon() -> NSImage {
-        let size = NSSize(width: 18, height: 15)
-        let img = NSImage(size: size)
-        img.lockFocus()
-        drawBars(in: NSRect(origin: .zero, size: size), color: .black,
-                 maxFraction: 0.82, barWidthFraction: 0.14, gapFraction: 0.09)
-        img.unlockFocus()
-        img.isTemplate = true
-        return img
+        SquircleIcon.template(size: NSSize(width: 18, height: 15)) { rect in
+            drawBars(in: rect, color: .black, maxFraction: 0.82, barWidthFraction: 0.14, gapFraction: 0.09)
+        }
+    }
+
+    private static func drawAppMark(in rect: NSRect) {
+        drawBars(in: rect, color: NSColor(Theme.ember),
+                 maxFraction: 0.42, barWidthFraction: 0.10, gapFraction: 0.065)
     }
 
     private static func drawBars(in rect: NSRect, color: NSColor,

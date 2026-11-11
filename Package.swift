@@ -11,13 +11,17 @@ let package = Package(
         // NOTE: WhisperKit "graduated" into the argmax-oss-swift package at
         // v1.0.0. `from: "1.0.0"` is required — `from: "0.9.0"` resolves to the
         // pre-1.0 API and won't match the calls below.
-        .package(url: "https://github.com/argmaxinc/argmax-oss-swift.git", from: "1.0.0")
+        .package(url: "https://github.com/argmaxinc/argmax-oss-swift.git", from: "1.0.0"),
+        // Shared "Graphite & Ember" theme, components and build scripts.
+        // Must be checked out at ../../GraphiteEmber.
+        .package(path: "../../GraphiteEmber")
     ],
     targets: [
         .executableTarget(
             name: "OneTapTranscribe",
             dependencies: [
-                .product(name: "WhisperKit", package: "argmax-oss-swift")
+                .product(name: "WhisperKit", package: "argmax-oss-swift"),
+                .product(name: "GraphiteEmber", package: "GraphiteEmber")
             ],
             path: "Sources/OneTapTranscribe",
             swiftSettings: [

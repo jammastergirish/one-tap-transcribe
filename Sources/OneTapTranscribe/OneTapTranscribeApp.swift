@@ -1,4 +1,5 @@
 import SwiftUI
+import GraphiteEmber
 import AppKit
 
 @main
@@ -8,6 +9,7 @@ struct OneTapTranscribeApp: App {
     @StateObject private var state: AppState
 
     init() {
+        AppArtwork.writeIconsetIfRequested()
         let store = SettingsStore()
         _store = StateObject(wrappedValue: store)
         _state = StateObject(wrappedValue: AppState(store: store))

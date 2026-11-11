@@ -1,4 +1,5 @@
 import SwiftUI
+import GraphiteEmber
 import AppKit
 
 /// Custom menu-bar dropdown panel (MenuBarExtra `.window` style).
@@ -10,25 +11,10 @@ struct MenuPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 9) {
+            MenuPanelHeader(title: "One Tap Transcribe", badge: state.status.badge,
+                            subtitle: "Hold \(store.settings.triggerKey.displayName) to talk, release to paste.") {
                 LogoSquircle(side: 24)
-                Text("One Tap Transcribe")
-                    .font(.system(size: 12.5, weight: .semibold))
-                    .foregroundStyle(Theme.textPrimary)
-                Spacer()
-                StatusBadge(text: state.status.badge)
             }
-            .padding(.horizontal, 12)
-            .padding(.top, 12)
-            .padding(.bottom, 7)
-
-            Text("Hold \(store.settings.triggerKey.displayName) to talk, release to paste.")
-                .font(.system(size: 11.5))
-                .foregroundStyle(Theme.textTertiary)
-                .padding(.horizontal, 12)
-                .padding(.bottom, 10)
-
-            Divider().overlay(Theme.divider)
 
             if !state.lastTranscript.isEmpty {
                 VStack(alignment: .leading, spacing: 3) {
@@ -91,32 +77,4 @@ struct MenuPanel: View {
     private static let timeFormatter: DateFormatter = {
         let f = DateFormatter(); f.dateFormat = "HH:mm"; return f
     }()
-}
-
-private struct MenuRow: View {
-    let title: String
-    let systemImage: String
-    let action: () -> Void
-    @State private var hover = false
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 8) {
-                Image(systemName: systemImage)
-                    .font(.system(size: 12))
-                    .frame(width: 16)
-                    .foregroundStyle(hover ? Theme.emberText : Theme.textSecondary)
-                Text(title)
-                    .font(.system(size: 13))
-                    .foregroundStyle(Theme.textPrimary)
-                Spacer()
-            }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 6)
-            .background(hover ? Theme.emberTint : Color.clear, in: RoundedRectangle(cornerRadius: 6))
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .onHover { hover = $0 }
-    }
 }

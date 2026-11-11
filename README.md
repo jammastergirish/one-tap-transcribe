@@ -52,16 +52,22 @@ Open from the menu-bar icon or main window → **Settings…**
 ## Build from source
 
 ```bash
-git clone <repo-url> && cd app
 ./build_app.sh release run     # compiles, bundles a signed .app, launches it
 ```
 
 Requires Xcode 26 / Swift 6.3. `swift build` works for a quick compile, but the
 `.app` bundle is needed for permissions and the menu-bar behavior.
 
-**Optional (developers):** `./setup_signing.sh` creates a stable local self-signed
-identity so rebuilds keep their macOS Accessibility grant (no re-granting after
-every build). Without it the build falls back to ad-hoc signing.
+The app shares its "Graphite & Ember" theme, components and build scripts with
+Intercept through the local **GraphiteEmber** package, which must be checked out
+at `../../GraphiteEmber` relative to this folder. `build_app.sh`, `make_dmg.sh`
+and `release.sh` here are thin wrappers around the scripts in
+`GraphiteEmber/Scripts`; this app's name and bundle ID live in `app.conf`.
+
+**Optional (developers):** `../../GraphiteEmber/Scripts/setup_signing.sh` creates
+a stable local self-signed identity so rebuilds keep their macOS Accessibility
+grant (no re-granting after every build). Without it the build falls back to
+ad-hoc signing.
 
 ## How it works
 
@@ -93,14 +99,12 @@ an Apple **Developer ID Application** certificate (Apple Developer Program) and
 **notarized**:
 
 ```bash
-# 1. Build + sign with Developer ID (Hardened Runtime):
-#    codesign --deep --options runtime --sign "Developer ID Application: …" OneTapTranscribe.app
-# 2. Package:
-./make_dmg.sh
-# 3. Notarize + staple:
-xcrun notarytool submit build/OneTapTranscribe-*.dmg --keychain-profile "NOTARY" --wait
-xcrun stapler staple build/OneTapTranscribe-*.dmg
+SIGN_ID="Developer ID Application: Your Name (TEAMID)" NOTARY_PROFILE="OneTapNotary" ./release.sh
 ```
+
+This builds, signs with Developer ID and the Hardened Runtime, packages
+`build/OneTapTranscribe-<version>.dmg` (plus a version-less copy), has Apple
+notarize it, and staples the ticket.
 
 Then upload the `.dmg` (e.g. to GitHub Releases) and publish its SHA-256. Without
 notarization, users must right-click → Open or clear the quarantine attribute.

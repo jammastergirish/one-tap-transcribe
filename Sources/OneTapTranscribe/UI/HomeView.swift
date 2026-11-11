@@ -1,4 +1,5 @@
 import SwiftUI
+import GraphiteEmber
 
 /// Main window — "Graphite & Ember": mono titlebar, inverse hotkey banner,
 /// ember-accented last-transcript card, footer.
@@ -10,25 +11,12 @@ struct HomeView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            titlebar
+            WindowTitleBar(title: "One Tap Transcribe", badge: state.status.badge)
             Divider().overlay(Theme.divider)
             content
         }
         .frame(width: 400)
         .background(Theme.windowBG)
-    }
-
-    // MARK: Titlebar
-
-    private var titlebar: some View {
-        HStack(spacing: 10) {
-            MonoLabel(text: "One Tap Transcribe", size: 12, tracking: 0.8, color: Theme.textPrimary)
-            Spacer()
-            StatusBadge(text: state.status.badge)
-        }
-        .padding(.horizontal, 20)   // aligned with the content below
-        .padding(.top, 30)          // sits just below the traffic lights
-        .padding(.bottom, 12)
     }
 
     // MARK: Content
@@ -58,16 +46,7 @@ struct HomeView: View {
             }
 
             if let warning = state.cleanupWarning {
-                HStack(alignment: .top, spacing: 7) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 11)).foregroundStyle(Theme.emberText)
-                    Text("Cleanup unavailable — \(warning) Transcripts are inserted uncleaned.")
-                        .font(.system(size: 11.5)).foregroundStyle(Theme.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .padding(10)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Theme.emberTint, in: RoundedRectangle(cornerRadius: 8))
+                NoticeBanner("Cleanup unavailable — \(warning) Transcripts are inserted uncleaned.")
             }
 
             footer
