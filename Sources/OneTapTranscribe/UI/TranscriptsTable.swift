@@ -28,7 +28,7 @@ private struct TranscriptRow: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 10) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(Format.when(entry.date, style: .compact))   // narrow column
+                Text(Format.when(entry.date))
                     .font(.mono(11))
                     .foregroundStyle(Theme.monoFaint)
                 if copied {
@@ -39,7 +39,7 @@ private struct TranscriptRow: View {
                         .foregroundStyle(Theme.monoFaint.opacity(0.8))
                 }
             }
-            .frame(width: 92, alignment: .leading)
+            .frame(width: 110, alignment: .leading)
 
             Text(entry.text)
                 .font(.system(size: 13))

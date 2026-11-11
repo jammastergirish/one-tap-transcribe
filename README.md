@@ -59,12 +59,12 @@ Requires Xcode 26 / Swift 6.3. `swift build` works for a quick compile, but the
 `.app` bundle is needed for permissions and the menu-bar behavior.
 
 The app shares its "Graphite & Ember" theme, components and build scripts with
-Intercept through the local **GraphiteEmber** package, which must be checked out
-at `../../GraphiteEmber` relative to this folder. `build_app.sh`, `make_dmg.sh`
-and `release.sh` here are thin wrappers around the scripts in
-`GraphiteEmber/Scripts`; this app's name and bundle ID live in `app.conf`.
+Intercept through the [GraphiteEmber](https://github.com/jammastergirish/GraphiteEmber)
+package, which SwiftPM fetches. `build_app.sh`, `make_dmg.sh` and `release.sh`
+here are links to `run_shared_script.sh`, which runs the matching script from the
+package's `Scripts/` folder; this app's name and bundle ID live in `app.conf`.
 
-**Optional (developers):** `../../GraphiteEmber/Scripts/setup_signing.sh` creates
+**Optional (developers):** the package's `Scripts/setup_signing.sh` creates
 a stable local self-signed identity so rebuilds keep their macOS Accessibility
 grant (no re-granting after every build). Without it the build falls back to
 ad-hoc signing.
