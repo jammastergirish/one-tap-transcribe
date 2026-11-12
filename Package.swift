@@ -13,7 +13,7 @@ let package = Package(
         // pre-1.0 API and won't match the calls below.
         .package(url: "https://github.com/argmaxinc/argmax-oss-swift.git", from: "1.0.0"),
         // Shared "Graphite & Ember" theme, components and build scripts.
-        .package(url: "https://github.com/jammastergirish/GraphiteEmber.git", from: "1.0.0")
+        .package(url: "https://github.com/jammastergirish/GraphiteEmber.git", from: "1.1.0")
     ],
     targets: [
         .executableTarget(

@@ -1,5 +1,5 @@
 {
-  "originHash" : "254d9d8395b80847452635a8ca48e45d95f02b1d60df267b8a85e1ccdbb31bba",
+  "originHash" : "01cee3486a5350645219a1727ce34145ed1ba2ccb51b5d0a54944132c938c8cb",
   "pins" : [
     {
       "identity" : "argmax-oss-swift",
@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/jammastergirish/GraphiteEmber.git",
       "state" : {
-        "revision" : "a1d889536d44f4b3fe08037b3c5f0a7987afbf74",
-        "version" : "1.0.0"
+        "revision" : "60b5fbd3cf3553e55e0053f3503f05d1f345e8e1",
+        "version" : "1.1.0"
       }
     },
     {

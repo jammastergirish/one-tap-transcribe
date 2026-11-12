@@ -52,38 +52,6 @@ struct KeyCapChip: View {
     }
 }
 
-// MARK: - Ember checkbox toggle style
-
-struct EmberCheckboxStyle: ToggleStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        Button {
-            configuration.isOn.toggle()
-        } label: {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(configuration.isOn ? Theme.ember : Theme.checkboxOff)
-                    .frame(width: 16, height: 16)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 4)
-                            .stroke(Theme.fieldBorder, lineWidth: configuration.isOn ? 0 : 1)
-                    )
-                    .overlay(
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundStyle(.white)
-                            .opacity(configuration.isOn ? 1 : 0)
-                    )
-                    .offset(y: 2)
-                configuration.label
-                    .font(.system(size: 13))
-                    .foregroundStyle(Theme.textPrimary)
-            }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
-}
-
 // MARK: - Mono field with ember focus ring
 
 struct MonoTextField: View {
